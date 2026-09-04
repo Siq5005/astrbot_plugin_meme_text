@@ -28,6 +28,7 @@ from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.message_components import Image, Plain
 from astrbot.api.star import Context, Star
 from astrbot.core.platform.message_type import MessageType
+from astrbot.core.star.filter.command import GreedyStr
 from astrbot.core.utils.astrbot_path import (
     get_astrbot_data_path,
     get_astrbot_plugin_data_path,
@@ -504,12 +505,12 @@ class MemeTextPlugin(Star):
     # ------------------------------------------------------------------
 
     @filter.command("meme")
-    async def meme_command(self, event: AstrMessageEvent, *args):
-        """手动生成表情包：/meme <文案>。"""
-        if not args:
+    async def meme_command(self, event: AstrMessageEvent, text: GreedyStr):
+        """手动生成表情包：/meme <文案>（空参数显示用法）。"""
+        text = (text or "").strip()
+        if not text:
             yield event.plain_result("用法：/meme <文案>，例如 /meme 这也行？")
             return
-        text = " ".join(str(arg) for arg in args)
         result = await asyncio.to_thread(self._render_once, text, "other")
         if not result["ok"]:
             yield event.plain_result(f"表情包渲染失败：{result['err']}")

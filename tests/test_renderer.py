@@ -243,3 +243,20 @@ def test_resolve_memes_base_dir_config_and_missing(tmp_path) -> None:
     configured.mkdir()
     assert resolve_memes_base_dir(str(configured), data_root=root) == configured
     assert resolve_memes_base_dir("", data_root=root) is None
+
+
+def test_command_param_binding_uses_greedy_string() -> None:
+    """/meme 命令参数按框架规则用 GreedyStr 绑定。
+
+    回归：旧写法 (self, event, *args) 会让框架把无注解的 VAR_POSITIONAL
+    当成类型转换，从而抛出 `_empty() takes no arguments`。
+    """
+    from astrbot.core.star.filter.command import CommandFilter, GreedyStr
+
+    cmd = CommandFilter("meme")
+    # 空参数 → 空字符串（命令体内显示用法）
+    assert cmd.validate_and_convert_params([], {"text": GreedyStr}) == {"text": ""}
+    # 多段文本 → 吞掉剩余全部参数并合并
+    assert cmd.validate_and_convert_params(
+        ["这也行？", "好不好"], {"text": GreedyStr}
+    ) == {"text": "这也行？ 好不好"}
