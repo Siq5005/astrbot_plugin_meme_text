@@ -1,11 +1,28 @@
 name: astrbot_plugin_meme_text
 display_name: 表情包文字生成
-desc: 给 LLM 提供「把 ≤8 字文案画进固定模板图的气泡里并发送」的能力。支持显式 LLM 工具（make_meme）与概率拦截（LLM 浓缩文案 + 情感分类，只发图不发文字）两条路径；成图按情感自动归档到 meme_manager 表情库（文件级松耦合，可零配置使用）。
-version: v1.1.3
+short_desc: 给 LLM 提供「把 ≤8 字文案画进固定模板图的气泡里并发送」的能力，支持 LLM 工具与概率拦截两条路径，成图按情感归档到 meme_manager 表情库。
+desc: >-
+  给 LLM 提供「把 ≤8 字文案画进固定模板图的气泡里并发送」的表情包能力，两条触发路径：
+
+  - **LLM 工具路径**：LLM 调用 make_meme 工具，自己给文案与情感分类，成图以 [meme:FILE_ID] 标记追加到回复文字之后；
+  - **概率拦截路径**：按配置概率，把 LLM 回复草稿再一次交给 LLM 浓缩成 ≤8 字文案并判断情感，本轮只发图不发文字，可只对指定群生效。
+
+  文字自动换行、自适应缩字号，物理上不会超出气泡范围；默认黑色粗体（假粗体实现），
+  输出图片可配置等比缩小（默认 720px）。成图按情感分类复制进 meme_manager 表情库，
+  云同步交给 meme_manager 自身，目录不可用时只发送不归档，零硬依赖。
+
+  支持 WebUI 上传更换模板图片、LLM 工具/概率拦截独立开关、群白名单。手动命令：/meme <文案>。
+version: 1.1.3
 author: Coe
 repo: https://github.com/Siq5005/astrbot_plugin_meme_text
 homepage: https://github.com/Siq5005/astrbot_plugin_meme_text
+social_link: https://github.com/Siq5005
 license: MIT
+tags:
+  - 表情包
+  - 图片
+  - LLM工具
+  - meme
 support_platforms:
   - aiocqhttp
   - telegram
