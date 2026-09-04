@@ -260,3 +260,20 @@ def test_command_param_binding_uses_greedy_string() -> None:
     assert cmd.validate_and_convert_params(
         ["这也行？", "好不好"], {"text": GreedyStr}
     ) == {"text": "这也行？ 好不好"}
+
+
+def test_render_downscale_to_max_size(tmp_path) -> None:
+    """max_size 生效时输出最长边不超过限制且保持宽高比。"""
+    out = str(tmp_path / "scaled.png")
+    render_meme(
+        str(TEMPLATE),
+        "这也行？",
+        DEFAULT_BOX,
+        resolve_font_path(""),
+        out_path=out,
+        max_size=512,
+    )
+    with Image.open(out) as img:
+        assert max(img.size) <= 512, img.size
+    # 原图 1280x1280 正方形，缩小后仍为正方形
+    assert img.size[0] == img.size[1]

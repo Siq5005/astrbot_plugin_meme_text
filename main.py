@@ -80,6 +80,7 @@ DEFAULT_CONFIG = {
     "text_color": "#000000",
     "stroke_color": "",
     "stroke_width": 0,
+    "max_output_size": 720,
     "font_path": "",
     "meme_manager_memes_dir": "",
 }
@@ -262,6 +263,7 @@ class MemeTextPlugin(Star):
                 stroke_width=int(self._cfg("stroke_width") or 0),
                 out_path=str(out_path),
                 bold=bool(self._cfg("bold")),
+                max_size=int(self._cfg("max_output_size") or 0),
             )
         except Exception as err:  # noqa: BLE001 - 渲染失败不应影响正常回复
             logger.error(f"表情包渲染失败: {err}")

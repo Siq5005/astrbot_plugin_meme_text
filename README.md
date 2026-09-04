@@ -39,6 +39,7 @@ AstrBot 表情包文字生成插件：给 LLM 提供「把 ≤8 字文案画进�
 | bold | true | 文字加粗（假粗体） |
 | text_color | #000000 | 文字颜色 |
 | stroke_color/width | 空/0 | 描边 |
+| max_output_size | 720 | 输出图片最长边上限（等比缩小，0 不缩小） |
 | font_path | 空 | 字体覆盖，空则自动探测（粗体优先） |
 | meme_manager_memes_dir | 空 | 表情库目录，空则自动探测 |
 

@@ -197,6 +197,7 @@ def render_meme(
     max_lines: int = 3,
     out_path: str | None = None,
     bold: bool = True,
+    max_size: int = 0,
 ) -> RenderResult:
     """把文案渲染到模板图的文字框内，输出 PNG。
 
@@ -212,6 +213,8 @@ def render_meme(
         out_path: 输出路径；为 None 时自动生成。
         bold: 是否加粗。无描边配置时用同色细描边实现假粗体，
             使其更醒目且不依赖系统粗体字体。
+        max_size: 输出图片最长边像素上限，超出则等比缩小（文字画完后再
+            缩放，气泡与文字比例不变）；0 表示不缩小。
 
     Returns:
         RenderResult: 输出路径与渲染信息。
@@ -262,6 +265,13 @@ def render_meme(
             stroke_fill=stroke_color if has_stroke else (color if bold else None),
         )
         cursor_y += line_height
+
+    if max_size > 0 and max(width, height) > max_size:
+        # 文字绘制完成后再整体等比缩小，气泡与文字相对位置不变
+        scale = max_size / max(width, height)
+        image = image.resize(
+            (round(width * scale), round(height * scale)), Image.Resampling.LANCZOS
+        )
 
     if out_path is None:
         out_path = str(Path(tempfile.gettempdir()) / "meme_text_render.png")

@@ -76,6 +76,11 @@
     "default": 0,
     "description": "描边宽度（像素，需同时填写描边颜色才生效）。"
   },
+  "max_output_size": {
+    "type": "int",
+    "default": 720,
+    "description": "输出图片最长边像素上限：超出会等比缩小后再发送（更小、更省流量）。0 表示不缩小。"
+  },
   "font_path": {
     "type": "string",
     "default": "",
