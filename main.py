@@ -27,7 +27,12 @@ from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.message_components import Image, Plain
 from astrbot.api.star import Context, Star
-from astrbot.core.utils.astrbot_path import get_astrbot_data_path, get_astrbot_temp_path
+from astrbot.core.platform.message_type import MessageType
+from astrbot.core.utils.astrbot_path import (
+    get_astrbot_data_path,
+    get_astrbot_plugin_data_path,
+    get_astrbot_temp_path,
+)
 
 from .renderer import render_meme, resolve_font_path
 
@@ -59,15 +64,19 @@ EMOTION_ALLOWLIST = (
 )
 
 DEFAULT_CONFIG = {
+    "enable_llm_tool": True,
+    "enable_probability": True,
+    "group_whitelist": [],
     "probability": 0.2,
     "max_chars": 8,
     "max_text_len": 30,
-    "template_path": "",
+    "template_path": [],
     "text_box_x": 0.08,
     "text_box_y": 0.11,
     "text_box_w": 0.44,
     "text_box_h": 0.24,
-    "text_color": "#3B176B",
+    "bold": True,
+    "text_color": "#000000",
     "stroke_color": "",
     "stroke_width": 0,
     "font_path": "",
@@ -112,6 +121,39 @@ def parse_summarize_output(
     return slogan, emotion
 
 
+def resolve_template_path(configured, plugin_data_root=None) -> str | None:
+    """把配置里的模板路径解析为实际存在的文件路径。
+
+    WebUI 的 file 类型配置存的是相对插件数据目录的路径列表（如
+    files/template_path/x.jpg），同时兼容旧的绝对路径字符串。
+
+    Args:
+        configured: 配置值（字符串或字符串列表）。
+        plugin_data_root: 插件数据根目录；不传时按
+            get_astrbot_plugin_data_path()/<插件名> 推算。
+
+    Returns:
+        存在的模板文件绝对路径；无可用配置时返回 None（调用方回退内置模板）。
+    """
+    values = (
+        configured
+        if isinstance(configured, list)
+        else ([configured] if configured else [])
+    )
+    root = (
+        Path(plugin_data_root)
+        if plugin_data_root
+        else Path(get_astrbot_plugin_data_path())
+    )
+    for value in reversed([str(v) for v in values if str(v).strip()]):
+        path = Path(value)
+        if not path.is_absolute():
+            path = root / value
+        if path.is_file():
+            return str(path)
+    return None
+
+
 class MemeTextPlugin(Star):
     """表情包文字生成插件。
 
@@ -134,11 +176,9 @@ class MemeTextPlugin(Star):
         return self.config.get(key, DEFAULT_CONFIG[key])
 
     def _template_path(self) -> str:
-        """返回模板图路径：优先配置值，其次插件内置模板。"""
-        configured = str(self._cfg("template_path") or "").strip()
-        if configured and Path(configured).is_file():
-            return configured
-        return str(DEFAULT_TEMPLATE)
+        """返回模板图路径：优先 WebUI 上传/配置值，其次插件内置模板。"""
+        resolved = resolve_template_path(self._cfg("template_path"))
+        return resolved or str(DEFAULT_TEMPLATE)
 
     def _text_box(self) -> dict[str, float]:
         """返回文字框（相对坐标）。"""
@@ -180,6 +220,7 @@ class MemeTextPlugin(Star):
                 stroke_color=str(self._cfg("stroke_color") or ""),
                 stroke_width=int(self._cfg("stroke_width") or 0),
                 out_path=str(out_path),
+                bold=bool(self._cfg("bold")),
             )
         except Exception as err:  # noqa: BLE001 - 渲染失败不应影响正常回复
             logger.error(f"表情包渲染失败: {err}")
@@ -267,6 +308,11 @@ class MemeTextPlugin(Star):
         """
         max_chars = int(self._cfg("max_chars"))
         slogan = (slogan or "").strip()
+        if not bool(self._cfg("enable_llm_tool")):
+            return json.dumps(
+                {"ok": False, "reason": "LLM 工具已在插件配置中关闭"},
+                ensure_ascii=False,
+            )
         if not slogan:
             return json.dumps(
                 {"ok": False, "reason": "文案不能为空"}, ensure_ascii=False
@@ -295,6 +341,10 @@ class MemeTextPlugin(Star):
             return
         if _MEME_MARKER_RE.search(text):
             return  # 本轮已走 make_meme 工具路径，不再概率拦截
+        if not bool(self._cfg("enable_probability")):
+            return  # 概率拦截开关已关闭
+        if not self._is_group_allowed(event):
+            return  # 群聊不在白名单内
         max_text_len = int(self._cfg("max_text_len") or 0)
         if max_text_len > 0 and len(text) > max_text_len:
             return  # 长回复不拦截
@@ -309,6 +359,23 @@ class MemeTextPlugin(Star):
             logger.error(f"概率拦截路径渲染失败: {result['err']}")
             return
         event.set_extra("meme_text_replace_image", result["path"])
+
+    def _is_group_allowed(self, event: AstrMessageEvent) -> bool:
+        """按群白名单决定是否对当前消息走概率拦截。
+
+        Args:
+            event: 消息事件。
+
+        Returns:
+            是否允许拦截；白名单为空或非群聊消息时恒为 True。
+        """
+        whitelist = self._cfg("group_whitelist") or []
+        if not whitelist:
+            return True
+        if event.get_message_type() != MessageType.GROUP_MESSAGE:
+            return True  # 白名单只约束群聊，私聊不受影响
+        group_id = event.get_group_id()
+        return group_id in [str(item) for item in whitelist]
 
     async def _summarize(self, text: str, event: AstrMessageEvent) -> tuple[str, str]:
         """用 LLM 把回复草稿浓缩成梗图文案并判断情感。

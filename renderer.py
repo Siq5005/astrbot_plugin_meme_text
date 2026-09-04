@@ -14,18 +14,19 @@ from typing import TypedDict
 
 from PIL import Image, ImageDraw, ImageFont
 
-# 常见中文字体候选，按平台顺序探测；配置 font_path 可覆盖
+# 常见中文字体候选，按平台顺序探测，粗体/中黑字体优先；配置 font_path 可覆盖
 FONT_CANDIDATES: tuple[str, ...] = (
-    # macOS
-    "/System/Library/Fonts/PingFang.ttc",
-    "/System/Library/Fonts/Hiragino Sans GB.ttc",
+    # macOS（STHeiti Medium 自带中黑字重；Hiragino Sans GB 偏细放最后）
     "/System/Library/Fonts/STHeiti Medium.ttc",
+    "/System/Library/Fonts/PingFang.ttc",
     "/System/Library/Fonts/STHeiti Light.ttc",
+    "/System/Library/Fonts/Hiragino Sans GB.ttc",
     # Windows
+    "C:/Windows/Fonts/msyhbd.ttc",
     "C:/Windows/Fonts/msyh.ttc",
-    "C:/Windows/Fonts/msyh.ttf",
     "C:/Windows/Fonts/simhei.ttf",
     # Linux
+    "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
     "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
     "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
     "/usr/share/fonts/truetype/arphic/uming.ttc",
@@ -33,6 +34,7 @@ FONT_CANDIDATES: tuple[str, ...] = (
 
 MIN_FONT_RATIO = 0.035  # 字号相对图片高度的下限，低于此值直接截断
 LINE_SPACING_RATIO = 1.18  # 行高 = 字号 * 该系数
+BOLD_STROKE = 2  # 假粗体：无描边配置时用同色描边实现，像素宽度固定，保证框内排版可预期
 
 
 class TextBox(TypedDict):
@@ -189,11 +191,12 @@ def render_meme(
     text: str,
     box: TextBox,
     font_path: str,
-    color: str = "#3B176B",
+    color: str = "#000000",
     stroke_color: str = "",
     stroke_width: int = 0,
     max_lines: int = 3,
     out_path: str | None = None,
+    bold: bool = True,
 ) -> RenderResult:
     """把文案渲染到模板图的文字框内，输出 PNG。
 
@@ -204,9 +207,11 @@ def render_meme(
         font_path: 字体文件路径。
         color: 文字颜色。
         stroke_color: 描边颜色，空字符串表示不描边。
-        stroke_width: 描边宽度（像素）。
+        stroke_width: 描边宽度（像素）；仅当 stroke_color 非空时生效。
         max_lines: 最大行数。
         out_path: 输出路径；为 None 时自动生成。
+        bold: 是否加粗。无描边配置时用同色细描边实现假粗体，
+            使其更醒目且不依赖系统粗体字体。
 
     Returns:
         RenderResult: 输出路径与渲染信息。
@@ -233,7 +238,9 @@ def render_meme(
     bh = max(1, min(bh, height - by))
 
     content = (text or "").strip() or "…"
-    stroke = max(0, int(stroke_width))
+    # 有效描边：显式配置优先；否则加粗时用同色细描边实现假粗体
+    has_stroke = bool(stroke_color)
+    stroke = max(0, int(stroke_width)) if has_stroke else (BOLD_STROKE if bold else 0)
     font_size, lines, truncated, warn = fit_font_size(
         content, font_path, bw, bh, max_lines, stroke
     )
@@ -251,8 +258,8 @@ def render_meme(
             line,
             font=font,
             fill=color,
-            stroke_width=stroke if stroke_color else 0,
-            stroke_fill=stroke_color if stroke_color else None,
+            stroke_width=stroke,
+            stroke_fill=stroke_color if has_stroke else (color if bold else None),
         )
         cursor_y += line_height
 

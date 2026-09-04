@@ -1,8 +1,24 @@
 {
+  "enable_llm_tool": {
+    "type": "boolean",
+    "default": true,
+    "description": "LLM 工具路径开关：关闭后 make_meme 工具调用会被拒绝（LLM 仍能看到工具但无法使用）。"
+  },
+  "enable_probability": {
+    "type": "boolean",
+    "default": true,
+    "description": "概率拦截路径开关：关闭后 LLM 回复不会被拦截成表情包图。"
+  },
+  "group_whitelist": {
+    "type": "array",
+    "items": { "type": "string" },
+    "default": [],
+    "description": "只拦短回复的群聊白名单：填写群号后，只有这些群的概率拦截才生效（仍然只拦截短回复）；留空则所有群聊生效。私聊不受此白名单影响。"
+  },
   "probability": {
     "type": "number",
     "default": 0.2,
-    "description": "概率拦截路径：LLM 回复命中该概率时，本轮改为只发表情包图（不发文字，文案由 LLM 浓缩）。设为 0 关闭概率拦截。"
+    "description": "概率拦截路径触发概率（0~1）：LLM 回复命中该概率且满足长度与白名单条件时，本轮改为只发表情包图（不发文字，文案由 LLM 浓缩）。设为 0 等价于关闭概率拦截。"
   },
   "max_chars": {
     "type": "number",
@@ -15,9 +31,10 @@
     "description": "仅当 LLM 回复草稿不超过该字数时才可能走概率拦截（长回复保持文字）；0 表示总是拦截。"
   },
   "template_path": {
-    "type": "string",
-    "default": "",
-    "description": "模板图片路径；留空使用插件自带 templates/template.jpg（左上角气泡的思考泡模板）。"
+    "type": "file",
+    "file_types": ["jpg", "jpeg", "png", "webp"],
+    "default": [],
+    "description": "模板图片：在 WebUI 里上传并选中后生效；留空使用插件自带模板（左上角思考气泡）。上传的文件存放在插件数据目录。"
   },
   "text_box_x": {
     "type": "number",
@@ -39,25 +56,30 @@
     "default": 0.24,
     "description": "文字框高度（相对图片高度的 0~1 比例）。文字自动适配，永不超出。"
   },
+  "bold": {
+    "type": "boolean",
+    "default": true,
+    "description": "文字加粗：开启时用同色细描边实现假粗体，不依赖系统粗体字体。"
+  },
   "text_color": {
     "type": "string",
-    "default": "#3B176B",
-    "description": "文字颜色（十六进制）。默认深紫，与模板气泡描边呼应。"
+    "default": "#000000",
+    "description": "文字颜色（十六进制）。默认黑色，最醒目。"
   },
   "stroke_color": {
     "type": "string",
     "default": "",
-    "description": "描边颜色（十六进制）；留空不描边。深色底图模板可填 #000000。"
+    "description": "描边颜色（十六进制）；留空沿用加粗设置。深色底图模板可填 #FFFFFF 白描边。"
   },
   "stroke_width": {
     "type": "number",
     "default": 0,
-    "description": "描边宽度（像素）。"
+    "description": "描边宽度（像素，需同时填写描边颜色才生效）。"
   },
   "font_path": {
     "type": "string",
     "default": "",
-    "description": "中文字体文件路径；留空自动探测系统字体（macOS PingFang/Hiragino/STHeiti、Windows 微软雅黑等）。"
+    "description": "中文字体文件路径；留空自动探测系统字体（macOS STHeiti/PingFang、Windows 微软雅黑粗体等）。"
   },
   "meme_manager_memes_dir": {
     "type": "string",

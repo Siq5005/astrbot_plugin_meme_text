@@ -7,6 +7,7 @@ from astrbot_plugin_meme_text.main import (
     _MEME_MARKER_RE,
     DECORATE_PRIORITY_LAST,
     parse_summarize_output,
+    resolve_template_path,
 )
 from astrbot_plugin_meme_text.renderer import (
     _tokenize,
@@ -183,3 +184,32 @@ def test_meme_marker_regex() -> None:
 def test_decorate_priority_runs_last() -> None:
     """装饰钩子优先级应远低于默认 0，保证最后执行覆盖其它插件。"""
     assert DECORATE_PRIORITY_LAST < 0
+
+
+def test_resolve_template_path(tmp_path) -> None:
+    """WebUI file 配置的相对路径应解析到插件数据目录，且后上传优先。"""
+    root = tmp_path / "plugin_data"
+    old = root / "files" / "template_path" / "old.png"
+    new = root / "files" / "template_path" / "new.png"
+    old.parent.mkdir(parents=True)
+    old.write_bytes(b"x")
+    new.write_bytes(b"x")
+    assert resolve_template_path(
+        ["files/template_path/old.png"], plugin_data_root=str(root)
+    ) == str(old)
+    # 后上传的优先
+    assert resolve_template_path(
+        ["files/template_path/old.png", "files/template_path/new.png"],
+        plugin_data_root=str(root),
+    ) == str(new)
+    # 绝对路径兼容
+    assert resolve_template_path([str(old)], plugin_data_root=str(root)) == str(old)
+    # 无可用配置 → None（调用方回退内置模板）
+    assert resolve_template_path([]) is None
+    assert resolve_template_path("") is None
+    assert (
+        resolve_template_path(
+            ["files/template_path/missing.png"], plugin_data_root=str(root)
+        )
+        is None
+    )
