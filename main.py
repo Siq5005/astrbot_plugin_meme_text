@@ -154,6 +154,46 @@ def resolve_template_path(configured, plugin_data_root=None) -> str | None:
     return None
 
 
+def resolve_memes_base_dir(
+    configured: str = "", data_root: Path | None = None
+) -> Path | None:
+    """解析 meme_manager 表情库根目录（含各情感分类子目录）。
+
+    解析顺序：配置值 → packs 布局（plugin_data/meme_manager/packs/*/memes，
+    meme_manager 4.x）→ 扁平布局（plugin_data/meme_manager/memes，3.x）→
+    旧版 memes_data。目录均不可用时返回 None（调用方只发送不归档）。
+
+    Args:
+        configured: 配置里指定的目录路径，非空且存在时优先。
+        data_root: AstrBot 数据根目录；不传时自动获取。
+
+    Returns:
+        表情库根目录，或 None。
+    """
+    if data_root is None:
+        data_root = Path(get_astrbot_data_path())
+    if configured:
+        candidate = Path(configured)
+        if candidate.is_dir():
+            return candidate
+    meme_root = data_root / "plugin_data" / "meme_manager"
+    packs_root = meme_root / "packs"
+    if packs_root.is_dir():
+        candidates = sorted(
+            (p for p in packs_root.iterdir() if (p / "memes").is_dir()),
+            key=lambda p: p.name != "builtin-default",
+        )
+        if candidates:
+            return candidates[0] / "memes"
+    flat = meme_root / "memes"
+    if flat.is_dir():
+        return flat
+    legacy = data_root / "memes_data"
+    if legacy.is_dir():
+        return legacy
+    return None
+
+
 class MemeTextPlugin(Star):
     """表情包文字生成插件。
 
@@ -260,33 +300,11 @@ class MemeTextPlugin(Star):
             return False
 
     def _resolve_memes_base_dir(self) -> Path | None:
-        """确定 meme_manager 表情库根目录（含各情感分类子目录）。
-
-        解析顺序：配置值 → 自动探测 meme_manager 的 packs 目录 → 旧版
-        memes_data 目录 → 无则返回 None。零硬依赖：目录不存在不影响发送。
-
-        Returns:
-            表情库根目录，或 None。
-        """
+        """确定 meme_manager 表情库根目录（含各情感分类子目录）。"""
         configured = str(self._cfg("meme_manager_memes_dir") or "").strip()
-        if configured:
-            candidate = Path(configured)
-            if candidate.is_dir():
-                return candidate
+        if configured and not Path(configured).is_dir():
             logger.warning(f"配置的 meme_manager_memes_dir 不存在: {configured}")
-        data_root = Path(get_astrbot_data_path())
-        packs_root = data_root / "plugin_data" / "meme_manager" / "packs"
-        if packs_root.is_dir():
-            candidates = sorted(
-                (p for p in packs_root.iterdir() if (p / "memes").is_dir()),
-                key=lambda p: p.name != "builtin-default",
-            )
-            if candidates:
-                return candidates[0] / "memes"
-        legacy = data_root / "memes_data"
-        if legacy.is_dir():
-            return legacy
-        return None
+        return resolve_memes_base_dir(configured)
 
     # ------------------------------------------------------------------
     # LLM 工具路径

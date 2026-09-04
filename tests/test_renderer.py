@@ -7,6 +7,7 @@ from astrbot_plugin_meme_text.main import (
     _MEME_MARKER_RE,
     DECORATE_PRIORITY_LAST,
     parse_summarize_output,
+    resolve_memes_base_dir,
     resolve_template_path,
 )
 from astrbot_plugin_meme_text.renderer import (
@@ -213,3 +214,32 @@ def test_resolve_template_path(tmp_path) -> None:
         )
         is None
     )
+
+
+def test_resolve_memes_base_dir_flat_layout(tmp_path) -> None:
+    """meme_manager 3.x 扁平布局 plugin_data/meme_manager/memes 应能被探测。"""
+    root = tmp_path / "data"
+    flat = root / "plugin_data" / "meme_manager" / "memes" / "happy"
+    flat.mkdir(parents=True)
+    assert resolve_memes_base_dir("", data_root=root) == flat.parent
+
+
+def test_resolve_memes_base_dir_packs_preferred(tmp_path) -> None:
+    """meme_manager 4.x packs 布局优先于扁平布局。"""
+    root = tmp_path / "data"
+    packs = (
+        root / "plugin_data" / "meme_manager" / "packs" / "builtin-default" / "memes"
+    )
+    flat = root / "plugin_data" / "meme_manager" / "memes"
+    packs.mkdir(parents=True)
+    flat.mkdir(parents=True)
+    assert resolve_memes_base_dir("", data_root=root) == packs
+
+
+def test_resolve_memes_base_dir_config_and_missing(tmp_path) -> None:
+    """配置值优先；全部缺失返回 None。"""
+    root = tmp_path / "data"
+    configured = tmp_path / "custom_memes"
+    configured.mkdir()
+    assert resolve_memes_base_dir(str(configured), data_root=root) == configured
+    assert resolve_memes_base_dir("", data_root=root) is None
