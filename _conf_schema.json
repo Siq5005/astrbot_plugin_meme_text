@@ -1,0 +1,67 @@
+{
+  "probability": {
+    "type": "number",
+    "default": 0.2,
+    "description": "概率拦截路径：LLM 回复命中该概率时，本轮改为只发表情包图（不发文字，文案由 LLM 浓缩）。设为 0 关闭概率拦截。"
+  },
+  "max_chars": {
+    "type": "number",
+    "default": 8,
+    "description": "画到图上的文案最大字数；超出会被 LLM 浓缩或截断。"
+  },
+  "max_text_len": {
+    "type": "number",
+    "default": 30,
+    "description": "仅当 LLM 回复草稿不超过该字数时才可能走概率拦截（长回复保持文字）；0 表示总是拦截。"
+  },
+  "template_path": {
+    "type": "string",
+    "default": "",
+    "description": "模板图片路径；留空使用插件自带 templates/template.jpg（左上角气泡的思考泡模板）。"
+  },
+  "text_box_x": {
+    "type": "number",
+    "default": 0.08,
+    "description": "文字框左上角 X（相对图片宽度的 0~1 比例）。"
+  },
+  "text_box_y": {
+    "type": "number",
+    "default": 0.11,
+    "description": "文字框左上角 Y（相对图片高度的 0~1 比例）。"
+  },
+  "text_box_w": {
+    "type": "number",
+    "default": 0.44,
+    "description": "文字框宽度（相对图片宽度的 0~1 比例）。文字自动适配，永不超出。"
+  },
+  "text_box_h": {
+    "type": "number",
+    "default": 0.24,
+    "description": "文字框高度（相对图片高度的 0~1 比例）。文字自动适配，永不超出。"
+  },
+  "text_color": {
+    "type": "string",
+    "default": "#3B176B",
+    "description": "文字颜色（十六进制）。默认深紫，与模板气泡描边呼应。"
+  },
+  "stroke_color": {
+    "type": "string",
+    "default": "",
+    "description": "描边颜色（十六进制）；留空不描边。深色底图模板可填 #000000。"
+  },
+  "stroke_width": {
+    "type": "number",
+    "default": 0,
+    "description": "描边宽度（像素）。"
+  },
+  "font_path": {
+    "type": "string",
+    "default": "",
+    "description": "中文字体文件路径；留空自动探测系统字体（macOS PingFang/Hiragino/STHeiti、Windows 微软雅黑等）。"
+  },
+  "meme_manager_memes_dir": {
+    "type": "string",
+    "default": "",
+    "description": "meme_manager 表情库根目录（通常为 <AstrBot data>/plugin_data/meme_manager/packs/xxx/memes）；留空自动探测，找不到时只发送不归档。"
+  }
+}

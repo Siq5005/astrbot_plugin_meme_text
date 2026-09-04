@@ -1,0 +1,14 @@
+name: astrbot_plugin_meme_text
+display_name: 表情包文字生成
+desc: 给 LLM 提供「把 ≤8 字文案画进固定模板图的气泡里并发送」的能力。支持显式 LLM 工具（make_meme）与概率拦截（LLM 浓缩文案 + 情感分类，只发图不发文字）两条路径；成图按情感自动归档到 meme_manager 表情库（文件级松耦合，可零配置使用）。
+version: v1.0.0
+author: Coe
+repo: https://github.com/Coe/astrbot_plugin_meme_text
+homepage: https://github.com/Coe/astrbot_plugin_meme_text
+license: MIT
+support_platforms:
+  - aiocqhttp
+  - telegram
+  - discord
+  - webchat
+astrbot_version: ">=4.16,<5"
