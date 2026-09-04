@@ -506,6 +506,7 @@ class MemeTextPlugin(Star):
     # 手动命令（便于无 LLM 时验证全链路）
     # ------------------------------------------------------------------
 
+    @filter.permission_type(filter.PermissionType.ADMIN)
     @filter.command("meme")
     async def meme_command(self, event: AstrMessageEvent, text: GreedyStr):
         """手动生成表情包：/meme <文案>（空参数显示用法）。"""

@@ -12,7 +12,7 @@ desc: >-
   云同步交给 meme_manager 自身，目录不可用时只发送不归档，零硬依赖。
 
   支持 WebUI 上传更换模板图片、LLM 工具/概率拦截独立开关、群白名单。手动命令：/meme <文案>。
-version: 1.1.3
+version: 1.1.4
 author: Coe
 repo: https://github.com/Siq5005/astrbot_plugin_meme_text
 homepage: https://github.com/Siq5005/astrbot_plugin_meme_text
